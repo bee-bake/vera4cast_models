@@ -77,7 +77,7 @@ source("https://raw.githubusercontent.com/LTREB-reservoirs/vera4cast_models/main
 # RUN MODEL
 reforecast_df <- example_CH4_model(
                                   forecast_date     = forecast_date,
-                                  model_id          = 'beebake_CH4flux_ID',
+                                  model_id          = 'dailyCH4_mlr_BK',
                                   horizon           = horizon,
                                   forecast_variable = 'CH4flux_umolm2s_mean',
                                   site              = 'fcre',
@@ -107,10 +107,40 @@ generate_forecast_plot(
 )
 
 
+# ── 10. VALIDATE AND SUBMIT ───────────────────────────────────────────────────
 
+# Check required columns are present before writing
+required_cols <- c("project_id", "site_id", "datetime", "family",
+                   "parameter", "variable", "prediction", "model_id")
 
+missing_cols <- setdiff(required_cols, names(reforecast_df))
 
+if (length(missing_cols) > 0) {
+  stop("Forecast is missing required columns: ",
+       paste(missing_cols, collapse = ", "),
+       "\nFix these before submitting.")
+} else {
+  cat("All required columns present.\n")
+}
 
+# Write forecast to file
+output_file <- paste0("dailyCH4_mlr_BK",
+                      format(forecast_date, "%Y-%m-%d"),
+                      ".csv")
+
+write_csv(reforecast_df, output_file)
+cat("Forecast written to:", output_file, "\n")
+
+# Validate
+cat("Running validator...\n")
+forecast_output_validator(output_file)
+
+# Submit — only runs if you reach this line (validator must not error out)
+cat("Submitting forecast...\n")
+submit(forecast_file = output_file,
+       ask           = FALSE)
+
+cat("Done!\n")
 
 
 
